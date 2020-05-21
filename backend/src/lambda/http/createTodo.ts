@@ -7,6 +7,7 @@ import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
 import * as AWS from 'aws-sdk'
 
 
+
 const doClient= new AWS.DynamoDB.DocumentClient()
 
 const todosTable = process.env.TODOS_TABLE
@@ -17,12 +18,26 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   // TODO: Implement creating a new TODO item
 
+  const todoId = event.pathParameters.todoId
 
-  await doClient.put({
-    TableName: todosTable,
-    Item: newTodo
-  }).promise()
+  const valiGroupId = await todoExisit(todoId)
 
+
+  if(!valiGroupId) {
+    return {
+      statusCode: 404,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        error: 'Todo does not exist'
+      })
+    }
+  }
+
+
+  const todonewItems = await creatTodo( newTodo)
+  
 
   return {
     statusCode: 200,
@@ -30,8 +45,41 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       'Access-Control-Allow-Origin': '*'
     },
     body: JSON.stringify({
-      newTodo
+      items: todonewItems
     })
   }
 
+
+
+}
+
+
+
+async function todoExisit(todoId: string) {
+
+  const result = await doClient
+  .get({
+    TableName: todosTable,
+    Key: {
+      id: todoId
+    }
+  }).promise()
+
+  console.log('Get group:', result)
+  return !!result.Item
+
+
+}
+
+
+async function creatTodo( newTodo: CreateTodoRequest) {
+ 
+ 
+  console.log('Storing new item: ', newTodo )
+   await doClient.put({
+    TableName: todosTable,
+    Item: newTodo
+  }).promise()
+
+  return newTodo
 }
