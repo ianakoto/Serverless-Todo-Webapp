@@ -28,7 +28,6 @@ provider:
     TODO_ID_INDEX: TodoIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-    JWKSURL: https://dev-19q0bhxm.auth0.com/.well-known/jwks.json
     AUTH_0_SECRET_URL_ID: Auth0SecretUrl-${self:provider.stage}
     AUTH_0_SECRET_URL_FIELD: auth0SecretUrl
   
