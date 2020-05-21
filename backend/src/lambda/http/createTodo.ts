@@ -23,6 +23,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   const valiGroupId = await todoExisit(todoId)
 
 
+
   if(!valiGroupId) {
     return {
       statusCode: 404,
