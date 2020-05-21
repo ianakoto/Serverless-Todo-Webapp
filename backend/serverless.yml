@@ -28,20 +28,7 @@ provider:
     TODO_ID_INDEX: TodoIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-    JWKSURL: https://dev-19q0bhxm.auth0.com/.well-known/jwks.json
-    AUTH_0_SECRET_URL_ID: Auth0SecretUrl-${self:provider.stage}
-    AUTH_0_SECRET_URL_FIELD: auth0SecretUrl
   
-  iamRolesStatements:
-    - Effect: Allow
-      Action:
-        - secretsmanager:GetSecretValue
-      Resource: !Ref Auth0Secret
-    - Effect: Allow
-      Action:
-        - kms:Decrypt
-      Resurce: !GetAtt KMSKey.Arn    
-
 
 functions:
 
@@ -210,36 +197,4 @@ resources:
               Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
         Bucket: !Ref AttachmentsBucket 
 
-    KMSKey:
-      Type: AWS::KMS::Key
-      Properties:
-        Description: KMS Key to encrypt Auth0urlsecret
-        KeyPolicy:
-          Version: '2012-10-17'
-          Id: Key-default-1
-          Statement:
-            - Sid: Allow administration of the Key
-              Effect: Allow
-              Principal:
-                AWS:
-                  Fn::Join:
-                  - ':'
-                  - - 'arn:aws:iam'
-                    - Ref: AWS::AccountId
-                    - 'root'
-              Action:
-                - 'kms:*'
-              Resource: '*'        
 
-    KMSKeyAlias:
-      Type: AWS::KMS::Alias
-      Properties:
-        AliasName: alias/auth0Key-${self:provider.stage}
-        TargetKeyId: !Ref KMSKey
-
-    Auth0Secret:
-      Type: AWS::SecretsManager::Secret
-      Properties:
-        Name: ${self:provider.environment.AUTH_0_SECRET_URL_ID}
-        Description: Auth0 secret url
-        KmsKeyId: !Ref KMSKey    

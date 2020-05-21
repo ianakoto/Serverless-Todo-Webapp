@@ -7,32 +7,21 @@ import Axios from 'axios'
 import { Jwt } from '../../auth/Jwt'
 import { JwtPayload } from '../../auth/JwtPayload'
 
-import * as middy from 'middy'
-import {secretsManager} from 'middy/middlewares'
-
 const logger = createLogger('auth')
 
 // TODO: Provide a URL that can be used to download a certificate that can be used
 // to verify JWT token signature.
 // To get this URL you need to go to an Auth0 page -> Show Advanced Settings -> Endpoints -> JSON Web Key Set
-
-const secretId = process.env.AUTH_0_SECRET_URL_ID
-const secretField = process.env.AUTH_0_SECRET_URL_FIELD
+const jwksUrl = 'https://dev-19q0bhxm.auth0.com/.well-known/jwks.json'
 
 
 
-
-
-export const handler =middy( async (
-  event: CustomAuthorizerEvent,
-  context
+export const handler = async (
+  event: CustomAuthorizerEvent
 ): Promise<CustomAuthorizerResult> => {
   logger.info('Authorizing a user', event.authorizationToken)
   try {
-
-    const jwksUrl = context.AUTH0_SECRET[secretField]
-
-    const jwtToken = await verifyToken(event.authorizationToken, jwksUrl)
+    const jwtToken = await verifyToken(event.authorizationToken)
     logger.info('User was authorized', jwtToken)
 
     return {
@@ -66,10 +55,8 @@ export const handler =middy( async (
     }
   }
 }
-)
 
-
-async function verifyToken(authHeader: string,jwksUrl:string): Promise<JwtPayload> {
+async function verifyToken(authHeader: string): Promise<JwtPayload> {
   const token = getToken(authHeader)
   const jwt: Jwt = decode(token, { complete: true }) as Jwt
 
@@ -99,14 +86,3 @@ function getToken(authHeader: string): string {
 
   return token
 }
-
-handler.use(
-  secretsManager({
-    cache: true,
-    cacheExpiryInMillis: 60000,
-    throwOnFailedCall: true,
-    secret: {
-      AUTH0_SECRET: secretId
-    }
-  })
-)
