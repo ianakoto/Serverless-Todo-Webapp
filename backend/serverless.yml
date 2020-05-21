@@ -75,6 +75,12 @@ custom:
 
 
 provider:
+
+  tracing:
+    lambda: true
+    apiGateway: true
+
+
   name: aws
   runtime: nodejs8.10
 

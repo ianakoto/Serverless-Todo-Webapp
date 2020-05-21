@@ -1,9 +1,14 @@
 import 'source-map-support/register'
 import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
 import * as AWS from 'aws-sdk'
+import * as AWSXRay from 'aws-xray-sdk'
 
 
-const doClient= new AWS.DynamoDB.DocumentClient()
+
+const XAWS = AWSXRay.captureAWS(AWS)
+
+const doClient= new XAWS.DynamoDB.DocumentClient()
+
 
 const todosTable = process.env.TODOS_TABLE
 

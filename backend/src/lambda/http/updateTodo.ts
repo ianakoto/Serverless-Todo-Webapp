@@ -5,11 +5,14 @@ import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } f
 import { UpdateTodoRequest } from '../../requests/UpdateTodoRequest'
 
 import * as AWS from 'aws-sdk'
+import * as AWSXRay from 'aws-xray-sdk'
 
 
 
+const XAWS = AWSXRay.captureAWS(AWS)
 
-const docClient= new AWS.DynamoDB.DocumentClient()
+const docClient= new XAWS.DynamoDB.DocumentClient()
+
 
 const todosTable = process.env.TODOS_TABLE
 
