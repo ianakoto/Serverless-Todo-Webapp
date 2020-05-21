@@ -4,18 +4,11 @@ service:
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
-  - serverless-plugin-warmup
   - serverless-reqvalidator-plugin
   - serverless-aws-documentation
 
 
 custom:
-  warmup:                           # avoid cold start for all functions
-    enable: true                    # Enable for all functions
-    name: 'warm-up-function'        # name of the generated function
-    payload:                        # Warmup invocation payload
-      isWarmup: true 
-    concurrency: 5                  # How many instances to keep running  
   documentation:
     api:
       info:
