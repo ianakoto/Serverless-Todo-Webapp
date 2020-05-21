@@ -42,7 +42,10 @@ functions:
       - http:
           method: get
           path: todos/{todoId}
-          cors: true
+          cors: true 
+          request:   
+            schema:   # Schema that will be used to validate incoming requests
+              application/json: ${file(models/get-todo-model.json)}  
     iamRolesStatements:
     - Effect: Allow
       Action:
@@ -53,7 +56,7 @@ functions:
       Action:
         - dynamodb:Query
       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODO_ID_INDEX}
-
+    
 
   # TODO: Configure this function
   CreateTodo:
@@ -63,6 +66,9 @@ functions:
           method: post
           path: todos/{todoId}/todos
           cors: true
+          request:   
+            schema:   # Schema that will be used to validate incoming requests
+              application/json: ${file(models/create-todo-model.json)}   
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -77,6 +83,9 @@ functions:
           method: patch
           path: todos/{todoId}
           cors: true
+          request:   
+            schema:   # Schema that will be used to validate incoming requests
+              application/json: ${file(models/update-todo-model.json)}  
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -91,6 +100,9 @@ functions:
           method: delete
           path: todos/{todoId}
           cors: true
+          request:   
+            schema:   # Schema that will be used to validate incoming requests
+              application/json: ${file(models/delete-todo-model.json)}  
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -107,6 +119,10 @@ functions:
       - http:
           method: post
           path: todos/{todoId}/attachment
+          cors: true
+          request:   
+            schema:   # Schema that will be used to validate incoming requests
+              application/json: ${file(models/delete-todo-model.json)}  
 
 resources:
   Resources:
@@ -167,13 +183,3 @@ resources:
         Bucket: !Ref AttachmentsBucket 
 
 
-HttpHandler:
-  handler: src/lambda/http/create.handler
-  events:
-    - http:
-        method: post
-        path: todos
-        request:
-          # Schema that will be used to validate incoming requests
-          schema:
-            application/json: ${file(models/create-todo-model.json)}        
