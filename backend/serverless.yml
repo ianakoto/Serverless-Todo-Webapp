@@ -25,6 +25,8 @@ provider:
 
   environment:
     TODOS_TABLE: Todos-${self:provider.stage}
+    TODO_ID_INDEX: TodoIdIndex
+
 
 functions:
 
@@ -37,14 +39,18 @@ functions:
     events:
       - http:
           method: get
-          path: todos/{todoId}/todos
+          path: todos/{todoId}
+          cors: true
     iamRolesStatements:
     - Effect: Allow
       Action:
         - dynamodb:GetItem
         - dynamodb:Scan
-        - dynamodb:Query
       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODO_ID_INDEX}
 
 
   # TODO: Configure this function
@@ -100,7 +106,13 @@ resources:
           - AttributeName: todoId
             KeyType: HASH
           - AttributeName: createdat
-            KeyType: RANGE                    
+            KeyType: RANGE     
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.TODO_ID_INDEX}
+            KeySchema:
+              KeyType: HASH
+            Projection:
+              ProjectionType: ALL                     
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}        
 

@@ -7,6 +7,8 @@ const doClient= new AWS.DynamoDB.DocumentClient()
 
 const todosTable = process.env.TODOS_TABLE
 
+const todoIdIndex = process.env.TODO_ID_INDEX
+
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   // TODO: Get all TODO items for a current user
@@ -29,18 +31,31 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   }
 
 
-  const todoItems = await getItemsPerTodo(todoId)
+  const todoItems = await getItemsPerTodo(todoId,todoIdIndex)
   
+
+  if(todoItems.Count != 0) {
+
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        items: todoItems.Items[0]
+      })
+    }
+
+  }
  
+  
 
   return {
-    statusCode: 200,
+    statusCode: 404,
     headers: {
       'Access-Control-Allow-Origin': '*'
     },
-    body: JSON.stringify({
-      items: todoItems
-    })
+    body: ''
   }
 
 
@@ -65,9 +80,10 @@ async function todoExisit(todoId: string) {
 }
 
 
-async function getItemsPerTodo(todoId: string) {
+async function getItemsPerTodo(todoId: string, todoIdIndex: string) {
   const result = await doClient.query({
     TableName: todosTable,
+    IndexName: todoIdIndex,
     KeyConditionExpression: 'todoId = :todoId',
     ExpressionAttributeValues: {
       ':todoId': todoId
@@ -75,5 +91,5 @@ async function getItemsPerTodo(todoId: string) {
     ScanIndexForward: false
   }).promise()
 
-  return result.Items
+  return result
 }
