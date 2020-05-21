@@ -15,10 +15,10 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   
   const todoId = event.pathParameters.todoId
 
-  const valiGroupId = await todoExisit(todoId)
+  const valiTodoId = await todoExisit(todoId)
 
 
-  if(!valiGroupId) {
+  if(!valiTodoId) {
     return {
       statusCode: 404,
       headers: {
@@ -48,7 +48,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   }
  
-  
+
 
   return {
     statusCode: 404,
@@ -73,7 +73,7 @@ async function todoExisit(todoId: string) {
     }
   }).promise()
 
-  console.log('Get group:', result)
+  console.log('Get todo:', result)
   return !!result.Item
 
 

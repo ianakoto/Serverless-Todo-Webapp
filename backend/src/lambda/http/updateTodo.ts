@@ -39,12 +39,35 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
   
  
- 
- 
- 
- 
- 
-  return undefined
+  updateTodo(todoId,updatedTodo).then(data => {
+
+    const get_data =  JSON.stringify(data, null, 2)
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        error: `UpdateItem succeeded: ${get_data} `
+      })
+    }
+
+}).catch(err => {
+
+    const get_error =  JSON.stringify(err, null, 2)
+    return {
+      statusCode: 404,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        error: `Unable to update item. Error JSON: ${get_error} `
+      })
+    }
+
+})
+
+
 }
 
 
@@ -60,8 +83,36 @@ async function todoExisit(todoId: string) {
     }
   }).promise()
 
-  console.log('Get group:', result)
+  console.log('Get todo:', result)
   return !!result.Item
 
+
+}
+
+
+
+
+
+async function updateTodo(todoId: string, newItem: UpdateTodoRequest) {
+  
+  var params = {
+    TableName:todosTable,
+    Key:{
+      "id": todoId
+    },
+    UpdateExpression: "set name =:name, dueDate=:dueDate, done=:done",
+    ExpressionAttributeValues:{
+        ":name":newItem.name,
+        ":dueDate":newItem.dueDate,
+        ":done":newItem.done
+    },
+    ReturnValues:"UPDATED_NEW"
+};
+
+  console.log("Attempting a conditional delete...");
+
+  const deleteItem = docClient.delete(params).promise()
+
+  return deleteItem
 
 }

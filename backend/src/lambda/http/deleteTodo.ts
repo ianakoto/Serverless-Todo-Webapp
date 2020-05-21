@@ -73,7 +73,7 @@ async function todoExisit(todoId: string) {
     }
   }).promise()
 
-  console.log('Get group:', result)
+  console.log('Get todo:', result)
   return !!result.Item
 
 
