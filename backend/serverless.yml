@@ -4,6 +4,17 @@ service:
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
+  - serverless-plugin-warmup
+  
+
+
+custom:
+  warmup:                           # avoid cold start for all functions
+    enable: true                    # Enable for all functions
+    name: 'warm-up-function'        # name of the generated function
+    payload:                        # Warmup invocation payload
+      isWarmup: true 
+    concurrency: 5                  # How many instances to keep running  
 
 provider:
   name: aws
@@ -11,6 +22,9 @@ provider:
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
+
+  environment:
+    TODOS_TABLE: Todos-${self:provider.stage}
 
 functions:
 
@@ -23,16 +37,29 @@ functions:
     events:
       - http:
           method: get
-          path: todos
+          path: todos/{todoId}/todos
+    iamRolesStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:Scan
+        - dynamodb:Query
+      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+
 
   # TODO: Configure this function
-  GetTodos:
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
       - http:
           method: post
           path: todos
+          cors: true
+  iamRolesStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
   # TODO: Configure this function
   UpdateTodo:
@@ -61,3 +88,30 @@ functions:
 resources:
   Resources:
     # TODO: Add any necessary AWS resources
+    GroupsDyanoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: todoId
+            AttributeType: S
+          - AttributeName: createdat
+            AttributeType: S            
+        KeySchema: 
+          - AttributeName: todoId
+            KeyType: HASH
+          - AttributeName: createdat
+            KeyType: RANGE                    
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.TODOS_TABLE}        
+
+
+HttpHandler:
+  handler: src/lambda/http/create.handler
+  events:
+    - http:
+        method: post
+        path: todos
+        request:
+          # Schema that will be used to validate incoming requests
+          schema:
+            application/json: ${file(models/create-todo-model.json)}        
