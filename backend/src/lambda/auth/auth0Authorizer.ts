@@ -82,9 +82,9 @@ async function verifyToken(authHeader: string,jwksUrl:string): Promise<JwtPayloa
     throw new Error('Unsuported ALgorithm')
   }
 
-  const secret = (await Axios.get(jwksUrl)).data
+  const cert = (await Axios.get(jwksUrl)).data
   
-  return verify(token,secret) as JwtPayload
+  return verify(token,cert, {algorithms: ['HS256']}) as JwtPayload
 
 }
 

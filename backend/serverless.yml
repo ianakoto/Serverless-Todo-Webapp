@@ -5,7 +5,8 @@ plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-plugin-warmup
-  
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 
 custom:
@@ -15,6 +16,70 @@ custom:
     payload:                        # Warmup invocation payload
       isWarmup: true 
     concurrency: 5                  # How many instances to keep running  
+  documentation:
+    api:
+      info:
+        version: '1.0.0'
+        title: request-validation
+        description: request-validation
+      tags:
+        -
+          name: User
+          description: User Management Response
+
+    models:
+      - name: CreateTodoRequest
+        contentType: "application/json"   
+        schema:
+          required: 
+            - name
+            - dueDate
+          type: object  
+          properties:
+            name:
+              type: string
+            dueDate:
+              type: string
+              
+     
+      - name: DeleteGetTodoRequest
+        contentType: "application/json"
+        schema:
+          required: 
+            - todoId
+          properties:
+            todoId:
+              type: string
+      - name: UpdateTodoResponse
+        contentType: "application/json"
+        schema:
+          required:
+            - name
+            - dueDate
+            - done
+          type: object
+          properties:
+            name:
+              type: string
+            dueDate:
+              type: string
+            done:
+              type: boolean
+      - name: 404JsonResponse
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            statusCode:
+              type: number
+  commonModelSchemaFragments:
+    MethodResponse404Json:
+      statusCode: '404'
+      responseModels:
+        "application/json": 404JsonResponse      
+
 
 provider:
   name: aws
@@ -42,6 +107,7 @@ provider:
       Resurce: !GetAtt KMSKey.Arn    
 
 
+
 functions:
 
   Auth:
@@ -55,9 +121,13 @@ functions:
           method: get
           path: todos/{todoId}
           cors: true 
-          request:   
-            schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(models\get-todo-model.json)}  
+          reqValidatorName: GateWayValidator
+          methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  "application/json": DeleteGetTodoRequest
+              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
+ 
     iamRolesStatements:
     - Effect: Allow
       Action:
@@ -79,9 +149,12 @@ functions:
           path: todos/{todoId}/todos
           cors: true
           authorizer: Auth
-          request:   
-            schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(models\create-todo-model.json)}   
+          reqValidatorName: GateWayValidator
+          methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  "application/json": CreateTodoRequest
+              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -97,9 +170,13 @@ functions:
           path: todos/{todoId}
           cors: true
           authorizer: Auth
-          request:   
-            schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(models\update-todo-model.json)}  
+          reqValidatorName: GateWayValidator
+          methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  "application/json": UpdateTodoResponse
+              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
+  
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -115,9 +192,13 @@ functions:
           path: todos/{todoId}
           cors: true
           authorizer: Auth
-          request:   
-            schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(models\delete-todo-model.json)}  
+          reqValidatorName: GateWayValidator
+          methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  "application/json": DeleteGetTodoRequest
+              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
+  
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -135,13 +216,27 @@ functions:
           method: post
           path: todos/{todoId}/attachment
           cors: true
-          request:   
-            schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(models\delete-todo-model.json)}  
+          authorizer: Auth
+          reqValidatorName: GateWayValidator
+          methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  "application/json": DeleteGetTodoRequest
+              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
+ 
 
 resources:
   Resources:
     # TODO: Add any necessary AWS resources
+    GateWayValidator:  
+      Type: "AWS::ApiGateway::RequestValidator"
+      Properties:
+        Name: 'only-body'
+        RestApiId: 
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
+
 
     GatewayResponseDefault4XX:
       Type: 'AWS::ApiGateway::GatewayResponse'
