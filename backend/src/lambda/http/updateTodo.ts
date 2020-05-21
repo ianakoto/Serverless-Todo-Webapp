@@ -4,10 +4,64 @@ import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } f
 
 import { UpdateTodoRequest } from '../../requests/UpdateTodoRequest'
 
+import * as AWS from 'aws-sdk'
+
+
+
+
+const docClient= new AWS.DynamoDB.DocumentClient()
+
+const todosTable = process.env.TODOS_TABLE
+
+
+
+
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
   const updatedTodo: UpdateTodoRequest = JSON.parse(event.body)
 
+
   // TODO: Update a TODO item with the provided id using values in the "updatedTodo" object
+ 
+  const valiTodoId = await todoExisit(todoId)
+
+  if(!valiTodoId) {
+    return {
+      statusCode: 404,
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        error: 'Cannot Update. Todo does not exist'
+      })
+    }
+  }
+
+  
+ 
+ 
+ 
+ 
+ 
+ 
   return undefined
+}
+
+
+
+
+async function todoExisit(todoId: string) {
+
+  const result = await docClient
+  .get({
+    TableName: todosTable,
+    Key: {
+      id: todoId
+    }
+  }).promise()
+
+  console.log('Get group:', result)
+  return !!result.Item
+
+
 }
