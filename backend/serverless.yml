@@ -28,7 +28,7 @@ provider:
     TODO_ID_INDEX: TodoIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-
+  
 
 functions:
 
@@ -141,7 +141,7 @@ resources:
         ResponseType: DEFAULT_4XX
         RestApiId:
           Ref: 'ApiGatewayRestApi'
-          
+
     GroupsDyanoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
