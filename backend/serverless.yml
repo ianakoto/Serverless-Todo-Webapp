@@ -76,6 +76,12 @@ functions:
       - http:
           method: patch
           path: todos/{todoId}
+          cors: true
+    iamRolesStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}      
 
   # TODO: Configure this function
   DeleteTodo:
@@ -84,6 +90,15 @@ functions:
       - http:
           method: delete
           path: todos/{todoId}
+          cors: true
+    iamRolesStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE} 
+
+
+
 
   # TODO: Configure this function
   GenerateUploadUrl:
