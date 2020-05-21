@@ -4,7 +4,7 @@ service:
 plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
-  # - serverless-plugin-warmup
+  - serverless-plugin-warmup
   
 
 
@@ -45,7 +45,7 @@ functions:
           cors: true 
           request:   
             schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(..\..\models\get-todo-model.json)}  
+              application/json: ${file(models\get-todo-model.json)}  
     iamRolesStatements:
     - Effect: Allow
       Action:
@@ -66,9 +66,10 @@ functions:
           method: post
           path: todos/{todoId}/todos
           cors: true
+          authorizer: Auth
           request:   
             schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(..\..\models\create-todo-model.json)}   
+              application/json: ${file(models\create-todo-model.json)}   
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -83,9 +84,10 @@ functions:
           method: patch
           path: todos/{todoId}
           cors: true
+          authorizer: Auth
           request:   
             schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(..\..\models\update-todo-model.json)}  
+              application/json: ${file(models\update-todo-model.json)}  
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -100,9 +102,10 @@ functions:
           method: delete
           path: todos/{todoId}
           cors: true
+          authorizer: Auth
           request:   
             schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(..\..\models\delete-todo-model.json)}  
+              application/json: ${file(models\delete-todo-model.json)}  
     iamRolesStatements:
       - Effect: Allow
         Action:
@@ -122,11 +125,23 @@ functions:
           cors: true
           request:   
             schema:   # Schema that will be used to validate incoming requests
-              application/json: ${file(..\..\models\delete-todo-model.json)}  
+              application/json: ${file(models\delete-todo-model.json)}  
 
 resources:
   Resources:
     # TODO: Add any necessary AWS resources
+
+    GatewayResponseDefault4XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Typr,X-Amz-Date,Authorization'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST,DELETE,PUT'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+          
     GroupsDyanoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
