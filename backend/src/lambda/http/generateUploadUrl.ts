@@ -3,13 +3,22 @@ import 'source-map-support/register'
 import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
 
 
-import * as AWS from 'aws-sdk'
-import * as AWSXRay from 'aws-xray-sdk'
+import * as uuid from 'uuid';
+import * as AWS from 'aws-sdk';
+import * as AWSXRay from "aws-xray-sdk";
+import { createLogger } from '../../utils/logger'
+const logger = createLogger('generateUploadUrl')
+
+
 
 
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
+const docClient= new XAWS.DynamoDB.DocumentClient()
+
+
+const todosTable = process.env.TODOS_TABLE
 
 
 const bucketName = process.env.IMAGES_S3_BUCKET
@@ -21,10 +30,19 @@ const s3 = new XAWS.S3({
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
+  const attachmentId = uuid.v4();
+ 
+  logger.info("Generating upload URL:", {
+    todoId: todoId,
+    attachmentId: attachmentId
+  });
 
-  // TODO: Return a presigned URL to upload a file for a TODO item with the provided id
-  
   const url = getUploadUrl(todoId)
+
+  await updateTodoAttachmentUrl(todoId, attachmentId);
+
+  logger.info("Attempting to put item:");
+
 
 
   return {
@@ -42,12 +60,30 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
 
 
-function getUploadUrl(todoId: string) {
+function getUploadUrl(attachmentId: string) {
 
   return s3.getSignedUrl('putObject',{
-    BUcket: bucketName,
-    Key: todoId,
+    Bucket: bucketName,
+    Key: attachmentId,
     Expires: urlExpiration
   })
 
+}
+
+
+
+async function updateTodoAttachmentUrl(todoId: string, attachmentUrl: string){
+
+  logger.info(`Updating todoId ${todoId} with attachmentUrl ${attachmentUrl}`)
+
+  await docClient.update({
+      TableName: todosTable,
+      Key: {
+          "todoId": todoId
+      },
+      UpdateExpression: "set attachmentUrl = :attachmentUrl",
+      ExpressionAttributeValues: {
+          ":attachmentUrl": `https://${bucketName}.s3.amazonaws.com/${attachmentUrl}`
+      }
+  }).promise();
 }

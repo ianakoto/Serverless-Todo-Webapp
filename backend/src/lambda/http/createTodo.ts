@@ -3,10 +3,15 @@ import 'source-map-support/register'
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda'
 
 import { CreateTodoRequest } from '../../requests/CreateTodoRequest'
-
+import {getUserIdFromEvent} from "../../auth/utils";
 import * as AWS from 'aws-sdk'
-import * as AWSXRay from 'aws-xray-sdk'
 
+
+import * as uuid from 'uuid';
+
+import * as AWSXRay from 'aws-xray-sdk'
+import { createLogger } from '../../utils/logger'
+const logger = createLogger('createTodo')
 
 
 const XAWS = AWSXRay.captureAWS(AWS)
@@ -20,40 +25,23 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   const newTodo: CreateTodoRequest = JSON.parse(event.body)
 
   // TODO: Implement creating a new TODO item
-  const todoId = event.pathParameters.todoId
+  const todoId = uuid.v4();
+  const userId = getUserIdFromEvent(event);
   const createdAt= new Date().toISOString()
 
-  const  newItem = {
-        todoId,
-        createdAt,
-        ...newTodo
-        
 
-
-      }
-
-
-
-  
-  const valiGroupId = await todoExisit(todoId)
-
-
-
-
-  if(!valiGroupId) {
-    return {
-      statusCode: 404,
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        error: 'Todo does not exist'
-      })
-    }
+  const newTodoWithAdditionalInfo = {
+      userId: userId,
+      todoId: todoId,
+      createdAt:createdAt,
+      ...newTodo
   }
 
 
-  const todonewItems = await creatTodo(newItem)
+
+
+  logger.info(`Todo new Item: ${newTodoWithAdditionalInfo}`) 
+  const todonewItems = await creatTodo(newTodoWithAdditionalInfo)
   
 
   return {
@@ -72,23 +60,6 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
 
 
-async function todoExisit(todoId: string) {
-
-  const result = await doClient
-  .get({
-    TableName: todosTable,
-    Key: {
-      id: todoId
-    }
-  }).promise()
-
-  console.log('Get group:', result)
-  return !!result.Item
-
-
-}
-
-
 async function creatTodo( newTodo: CreateTodoRequest) {
  
  
@@ -97,6 +68,8 @@ async function creatTodo( newTodo: CreateTodoRequest) {
     TableName: todosTable,
     Item: newTodo
   }).promise()
-
+  logger.info('Attempting to create TOdos')
   return newTodo
 }
+
+

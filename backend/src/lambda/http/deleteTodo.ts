@@ -7,7 +7,8 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } f
 
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
-
+import { createLogger } from '../../utils/logger'
+const logger = createLogger('deleteTodo')
 
 
 const XAWS = AWSXRay.captureAWS(AWS)
@@ -23,68 +24,32 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   const todoId = event.pathParameters.todoId
 
   
-  const valiTodoId = await todoExisit(todoId)
-
-  if(!valiTodoId) {
-    return {
-      statusCode: 404,
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        error: 'Cannot Delete. Todo does not exist'
-      })
-    }
-  }
 
 
-  deleteTodo(todoId).then(data => {
 
-        const get_data =  JSON.stringify(data, null, 2)
-        return {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            error: `DeleteItem succeeded: ${get_data} `
-          })
-        }
+ await deleteTodo(todoId)
 
-}).catch(err => {
 
-        const get_error =  JSON.stringify(err, null, 2)
-        return {
-          statusCode: 404,
-          headers: {
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            error: `Unable to delete item. Error JSON: ${get_error} `
-          })
-        }
 
-  })
+logger.info('sucessfully deleted')
+
   
+return {
+  statusCode: 200,
+  headers: {
+    'Access-Control-Allow-Origin': '*'
+  },
+  body: JSON.stringify({
+    success: "item deleted succesfully"
+  })
+}
+
+
 }
 
 
 
-async function todoExisit(todoId: string) {
 
-  const result = await docClient
-  .get({
-    TableName: todosTable,
-    Key: {
-      id: todoId
-    }
-  }).promise()
-
-  console.log('Get todo:', result)
-  return !!result.Item
-
-
-}
 
 
 async function deleteTodo(todoId: string) {
@@ -92,11 +57,11 @@ async function deleteTodo(todoId: string) {
   var params = {
     TableName:todosTable,
     Key:{
-      "id": todoId
+      "todoId": todoId
     }
 };
 
-  console.log("Attempting a conditional delete...");
+  logger.info("Attempting a conditional delete...");
 
   const deleteItem = docClient.delete(params).promise()
 

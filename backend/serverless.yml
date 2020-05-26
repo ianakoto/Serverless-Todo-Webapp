@@ -12,14 +12,9 @@ custom:
   documentation:
     api:
       info:
-        version: '1.0.0'
-        title: request-validation
-        description: request-validation
-      tags:
-        -
-          name: User
-          description: User Management Response
-
+        version: 'v1.0.0'
+        title: Udagram API
+        description: Serverless application for managing todos
     models:
       - name: CreateTodoRequest
         contentType: "application/json"   
@@ -32,14 +27,13 @@ custom:
             name:
               type: string
             dueDate:
-              type: string
-              
-     
+              type: string  
       - name: DeleteGetTodoRequest
         contentType: "application/json"
         schema:
           required: 
             - todoId
+          type: object  
           properties:
             todoId:
               type: string
@@ -58,6 +52,13 @@ custom:
               type: string
             done:
               type: boolean
+      - name: Response
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            result:
+              type: string        
       - name: 404JsonResponse
         contentType: "application/json"
         schema:
@@ -82,52 +83,38 @@ provider:
 
 
   name: aws
-  runtime: nodejs8.10
+  runtime: nodejs12.x
 
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
 
   environment:
-    TODOS_TABLE: Todos-${self:provider.stage}
+    TODOS_TABLE: TodosTable-${self:provider.stage}
     TODO_ID_INDEX: TodoIdIndex
-    IMAGES_S3_BUCKET: serverless-udagram-images-${self:provider.stage}
+    IMAGES_S3_BUCKET: serverless-udagram-images-4tf129ytre0764-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-    AUTH_0_SECRET_URL_ID: Auth0SecretUrl-${self:provider.stage}
-    AUTH_0_SECRET_URL_FIELD: auth0SecretUrl
-  
-  iamRolesStatements:
-    - Effect: Allow
-      Action:
-        - secretsmanager:GetSecretValue
-      Resource: !Ref Auth0Secret
-    - Effect: Allow
-      Action:
-        - kms:Decrypt
-      Resurce: !GetAtt KMSKey.Arn    
+
+    
+
+
 
 
 
 functions:
-
+  
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
-  # TODO: Configure this function
+
   GetTodos:
     handler: src/lambda/http/getTodos.handler
     events:
       - http:
           method: get
-          path: todos/{todoId}
+          path: todos
+          authorizer: Auth
           cors: true 
-          reqValidatorName: GateWayValidator
-          methodResponses:
-              - statusCode: '200'
-                responseModels:
-                  "application/json": DeleteGetTodoRequest
-              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
- 
-    iamRolesStatements:
+    iamRoleStatements:
     - Effect: Allow
       Action:
         - dynamodb:GetItem
@@ -137,138 +124,159 @@ functions:
       Action:
         - dynamodb:Query
       Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODO_ID_INDEX}
-    
+    - Effect: Allow
+      Action:
+        - xray:GetSamplingRules
+        - xray:GetSamplingTargets
+        - xray:GetSamplingStatisticSummaries
+        - xray:BatchGetTraces
+        - xray:GetServiceGraph
+        - xray:GetTraceGraph
+        - xray:GetTraceSummaries
+        - xray:GetGroups
+        - xray:GetGroup
+        - xray:PutTraceSegments
+      Resource:
+        - "*"
 
-  # TODO: Configure this function
+  # # TODO: Configure this function
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
       - http:
           method: post
-          path: todos/{todoId}/todos
-          cors: true
+          path: todos
           authorizer: Auth
+          cors: true
           reqValidatorName: GateWayValidator
+          documentation:
+            summary: "Create todos"
+            description: "create todos"
+            tags:
+              - CreateTodos
+            requestModels:
+              "application/json": CreateTodoRequest
           methodResponses:
               - statusCode: '200'
                 responseModels:
-                  "application/json": CreateTodoRequest
+                  "application/json": Request
               - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
-    iamRolesStatements:
+
+    iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - xray:GetSamplingRules
+          - xray:GetSamplingTargets
+          - xray:GetSamplingStatisticSummaries
+          - xray:BatchGetTraces
+          - xray:GetServiceGraph
+          - xray:GetTraceGraph
+          - xray:GetTraceSummaries
+          - xray:GetGroups
+          - xray:GetGroup
+          - xray:PutTraceSegments
+        Resource:
+          - "*"
 
-  # TODO: Configure this function
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
     events:
       - http:
           method: patch
           path: todos/{todoId}
-          cors: true
           authorizer: Auth
-          reqValidatorName: GateWayValidator
-          methodResponses:
-              - statusCode: '200'
-                responseModels:
-                  "application/json": UpdateTodoResponse
-              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
-  
-    iamRolesStatements:
+          cors: true
+         
+    iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:UpdateItem
+          - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}      
+      - Effect: Allow
+        Action:
+          - xray:GetSamplingRules
+          - xray:GetSamplingTargets
+          - xray:GetSamplingStatisticSummaries
+          - xray:BatchGetTraces
+          - xray:GetServiceGraph
+          - xray:GetTraceGraph
+          - xray:GetTraceSummaries
+          - xray:GetGroups
+          - xray:GetGroup
+          - xray:PutTraceSegments
+        Resource:
+          - "*"
 
-  # TODO: Configure this function
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
     events:
       - http:
           method: delete
           path: todos/{todoId}
-          cors: true
           authorizer: Auth
-          reqValidatorName: GateWayValidator
-          methodResponses:
-              - statusCode: '200'
-                responseModels:
-                  "application/json": DeleteGetTodoRequest
-              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
-  
-    iamRolesStatements:
+          cors: true
+
+    iamRoleStatements:
       - Effect: Allow
         Action:
           - dynamodb:DeleteItem
+          - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE} 
+      - Effect: Allow
+        Action:
+          - xray:GetSamplingRules
+          - xray:GetSamplingTargets
+          - xray:GetSamplingStatisticSummaries
+          - xray:BatchGetTraces
+          - xray:GetServiceGraph
+          - xray:GetTraceGraph
+          - xray:GetTraceSummaries
+          - xray:GetGroups
+          - xray:GetGroup
+          - xray:PutTraceSegments
+        Resource:
+          - "*"
 
-
-
-
-  # TODO: Configure this function
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
     events:
       - http:
           method: post
           path: todos/{todoId}/attachment
-          cors: true
           authorizer: Auth
-          reqValidatorName: GateWayValidator
-          methodResponses:
-              - statusCode: '200'
-                responseModels:
-                  "application/json": DeleteGetTodoRequest
-              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
- 
+          cors: true
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+        Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+      - Effect: Allow
+        Action:
+          - dynamodb:UpdateItem
+        Resource:
+          - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - xray:GetSamplingRules
+          - xray:GetSamplingTargets
+          - xray:GetSamplingStatisticSummaries
+          - xray:BatchGetTraces
+          - xray:GetServiceGraph
+          - xray:GetTraceGraph
+          - xray:GetTraceSummaries
+          - xray:GetGroups
+          - xray:GetGroup
+          - xray:PutTraceSegments
+        Resource:
+          - "*"
 
 resources:
   Resources:
-    # TODO: Add any necessary AWS resources
-    GateWayValidator:  
-      Type: "AWS::ApiGateway::RequestValidator"
-      Properties:
-        Name: 'only-body'
-        RestApiId: 
-          Ref: ApiGatewayRestApi
-        ValidateRequestBody: true
-        ValidateRequestParameters: false
-
-
-    GatewayResponseDefault4XX:
-      Type: 'AWS::ApiGateway::GatewayResponse'
-      Properties:
-        ResponseParameters:
-          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
-          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Typr,X-Amz-Date,Authorization'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST,DELETE,PUT'"
-        ResponseType: DEFAULT_4XX
-        RestApiId:
-          Ref: 'ApiGatewayRestApi'
-
-    GroupsDyanoDBTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        AttributeDefinitions:
-          - AttributeName: todoId
-            AttributeType: S
-          - AttributeName: createdat
-            AttributeType: S            
-        KeySchema: 
-          - AttributeName: todoId
-            KeyType: HASH
-          - AttributeName: createdat
-            KeyType: RANGE     
-        GlobalSecondaryIndexes:
-          - IndexName: ${self:provider.environment.TODO_ID_INDEX}
-            KeySchema:
-              KeyType: HASH
-            Projection:
-              ProjectionType: ALL                     
-        BillingMode: PAY_PER_REQUEST
-        TableName: ${self:provider.environment.TODOS_TABLE}        
 
     AttachmentsBucket:
       Type: AWS::S3::Bucket
@@ -276,21 +284,21 @@ resources:
         BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
         CorsConfiguration:
           CorsRules:
-          -
-            AllowedOrigins:
-              - '*'
-            AllowedHeaders:
-              - '*'
-            AllowedMethods:
-              - GET
-              - PUT 
-              - POST
-              - DELETE 
-              - HEAD 
-            MaxAge: 3000    
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT 
+                - POST
+                - DELETE 
+                - HEAD 
+              MaxAge: 3000    
 
     BucketPolicy:
-      Type: AWS::S3::Bucket
+      Type: AWS::S3::BucketPolicy
       Properties:
         PolicyDocument:
           Id: MyPolicy
@@ -303,36 +311,47 @@ resources:
               Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
         Bucket: !Ref AttachmentsBucket 
 
-    KMSKey:
-      Type: AWS::KMS::Key
-      Properties:
-        Description: KMS Key to encrypt Auth0urlsecret
-        KeyPolicy:
-          Version: '2012-10-17'
-          Id: Key-default-1
-          Statement:
-            - Sid: Allow administration of the Key
-              Effect: Allow
-              Principal:
-                AWS:
-                  Fn::Join:
-                  - ':'
-                  - - 'arn:aws:iam'
-                    - Ref: AWS::AccountId
-                    - 'root'
-              Action:
-                - 'kms:*'
-              Resource: '*'        
 
-    KMSKeyAlias:
-      Type: AWS::KMS::Alias
-      Properties:
-        AliasName: alias/auth0Key-${self:provider.stage}
-        TargetKeyId: !Ref KMSKey
+    GateWayResponseDefault4XX:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties: 
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
+        ResponseType: DEFAULT_4XX
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'  
 
-    Auth0Secret:
-      Type: AWS::SecretsManager::Secret
+
+    GateWayValidator:  
+      Type: "AWS::ApiGateway::RequestValidator"
       Properties:
-        Name: ${self:provider.environment.AUTH_0_SECRET_URL_ID}
-        Description: Auth0 secret url
-        KmsKeyId: !Ref KMSKey    
+        Name: 'request-body-validator'
+        RestApiId: 
+          Ref: ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: false
+
+    TodosDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: todoId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S                     
+        KeySchema: 
+          - AttributeName: todoId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.TODOS_TABLE}                    
+        GlobalSecondaryIndexes:
+          - IndexName: ${self:provider.environment.TODO_ID_INDEX}
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL    
+    
+

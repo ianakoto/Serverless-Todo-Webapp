@@ -1,14 +1,12 @@
 import { CustomAuthorizerEvent, CustomAuthorizerResult } from 'aws-lambda'
 import 'source-map-support/register'
 
-import { verify, decode } from 'jsonwebtoken'
+import { verify } from 'jsonwebtoken'
 import { createLogger } from '../../utils/logger'
-import Axios from 'axios'
-import { Jwt } from '../../auth/Jwt'
+import request from 'request-promise';
 import { JwtPayload } from '../../auth/JwtPayload'
 
-import * as middy from 'middy'
-import {secretsManager} from 'middy/middlewares'
+
 
 const logger = createLogger('auth')
 
@@ -16,23 +14,21 @@ const logger = createLogger('auth')
 // to verify JWT token signature.
 // To get this URL you need to go to an Auth0 page -> Show Advanced Settings -> Endpoints -> JSON Web Key Set
 
-const secretId = process.env.AUTH_0_SECRET_URL_ID
-const secretField = process.env.AUTH_0_SECRET_URL_FIELD
+const jwksUrl = 'https://dev-19q0bhxm.auth0.com/.well-known/jwks.json'
 
 
 
 
 
-export const handler =middy( async (
-  event: CustomAuthorizerEvent,
-  context
+export const handler = async (
+  event: CustomAuthorizerEvent
 ): Promise<CustomAuthorizerResult> => {
   logger.info('Authorizing a user', event.authorizationToken)
   try {
 
-    const jwksUrl = context.AUTH0_SECRET[secretField]
 
-    const jwtToken = await verifyToken(event.authorizationToken, jwksUrl)
+
+    const jwtToken = await verifyToken(event.authorizationToken)
     logger.info('User was authorized', jwtToken)
 
     return {
@@ -66,25 +62,34 @@ export const handler =middy( async (
     }
   }
 }
-)
 
 
-async function verifyToken(authHeader: string,jwksUrl:string): Promise<JwtPayload> {
+async function verifyToken(authHeader: string): Promise<JwtPayload> {
   const token = getToken(authHeader)
-  const jwt: Jwt = decode(token, { complete: true }) as Jwt
+ 
 
   // TODO: Implement token verification
   // You should implement it similarly to how it was implemented for the exercise for the lesson 5
   // You can read more about how to do this here: https://auth0.com/blog/navigating-rs256-and-jwks/
   
-  if (jwt.header.alg !== 'HS256') {
-    // we are only supporting RS256 so fail if this happens.
-    throw new Error('Unsuported ALgorithm')
-  }
 
-  const cert = (await Axios.get(jwksUrl)).data
+  const jwksRequest = await request({
+    uri: jwksUrl,
+    strictSsl: true,
+    json: true
+  }).promise();
+
+  const jwks = jwksRequest.keys;
   
-  return verify(token,cert, {algorithms: ['HS256']}) as JwtPayload
+  const signingKeys = jwks.map(key => {
+    return { kid: key.kid, 
+             nbf: key.nbf,
+             publicKey: certToPEM(key.x5c[0])
+           };
+  });
+  const signingKey = signingKeys[0].publicKey;
+
+  return verify(token, signingKey, {algorithms: ['RS256']}) as JwtPayload;
 
 }
 
@@ -100,13 +105,10 @@ function getToken(authHeader: string): string {
   return token
 }
 
-handler.use(
-  secretsManager({
-    cache: true,
-    cacheExpiryInMillis: 60000,
-    throwOnFailedCall: true,
-    secret: {
-      AUTH0_SECRET: secretId
-    }
-  })
-)
+
+
+function certToPEM(cert) {
+  cert = cert.match(/.{1,64}/g).join('\n');
+  cert = `-----BEGIN CERTIFICATE-----\n${cert}\n-----END CERTIFICATE-----\n`;
+  return cert;
+}

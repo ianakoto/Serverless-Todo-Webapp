@@ -1,9 +1,10 @@
 import 'source-map-support/register'
-import { APIGatewayProxyEvent, APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
+import { APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 
-
+import { createLogger } from '../../utils/logger'
+const logger = createLogger('getTodo')
 
 const XAWS = AWSXRay.captureAWS(AWS)
 
@@ -12,31 +13,17 @@ const doClient= new XAWS.DynamoDB.DocumentClient()
 
 const todosTable = process.env.TODOS_TABLE
 
-const todoIdIndex = process.env.TODO_ID_INDEX
 
 
-export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+
+export const handler: APIGatewayProxyHandler = async (): Promise<APIGatewayProxyResult> => {
   // TODO: Get all TODO items for a current user
   
-  const todoId = event.pathParameters.todoId
-
-  const valiTodoId = await todoExisit(todoId)
 
 
-  if(!valiTodoId) {
-    return {
-      statusCode: 404,
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        error: 'Todo does not exist'
-      })
-    }
-  }
 
 
-  const todoItems = await getItemsPerTodo(todoId,todoIdIndex)
+  const todoItems = await getItemsPerTodo()
   
 
   if(todoItems.Count != 0) {
@@ -47,7 +34,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
-        items: todoItems.Items[0]
+        items: todoItems.Items
       })
     }
 
@@ -68,33 +55,11 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 }
 
 
-async function todoExisit(todoId: string) {
-
-  const result = await doClient
-  .get({
-    TableName: todosTable,
-    Key: {
-      id: todoId
-    }
+async function getItemsPerTodo() {
+  const result = await doClient.scan({
+    TableName: todosTable
   }).promise()
 
-  console.log('Get todo:', result)
-  return !!result.Item
-
-
-}
-
-
-async function getItemsPerTodo(todoId: string, todoIdIndex: string) {
-  const result = await doClient.query({
-    TableName: todosTable,
-    IndexName: todoIdIndex,
-    KeyConditionExpression: 'todoId = :todoId',
-    ExpressionAttributeValues: {
-      ':todoId': todoId
-    },
-    ScanIndexForward: false
-  }).promise()
-
+  logger.info(`todo results: ${result.items}`)
   return result
 }
