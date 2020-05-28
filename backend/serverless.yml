@@ -293,14 +293,14 @@ resources:
         KeySchema: 
           - AttributeName: todoId
             KeyType: HASH
+          - AttributeName: createdAt
+            KeyType: HASH  
         TableName: ${self:provider.environment.TODOS_TABLE}                    
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.TODO_ID_INDEX}
             KeySchema:
               - AttributeName: userId
                 KeyType: HASH
-              - AttributeName: createdAt
-                KeyType: RANGE  
             Projection:
               ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST                  
