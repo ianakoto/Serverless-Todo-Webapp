@@ -28,27 +28,7 @@ custom:
               type: string
             dueDate:
               type: string  
-      - name: Response
-        contentType: "application/json"
-        schema:
-          type: object
-          properties:
-            result:
-              type: string        
-      - name: 404JsonResponse
-        contentType: "application/json"
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-            statusCode:
-              type: number
-  commonModelSchemaFragments:
-    MethodResponse404Json:
-      statusCode: '404'
-      responseModels:
-        "application/json": 404JsonResponse      
+
 
 
 provider:
@@ -127,15 +107,9 @@ functions:
           documentation:
             summary: "Create todos"
             description: "create todos"
-            tags:
-              - CreateTodos
             requestModels:
               "application/json": CreateTodoRequest
-          methodResponses:
-              - statusCode: '200'
-                responseModels:
-                  "application/json": Request
-              - ${self:custom.commonModelSchemaFragments.MethodResponse404Json}
+
 
     iamRoleStatements:
       - Effect: Allow
