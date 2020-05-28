@@ -45,7 +45,7 @@ provider:
   region: ${opt:region, 'us-east-1'}
 
   environment:
-    TODOS_TABLE: DynamoTodosTable-${self:provider.stage}
+    TODOS_TABLE: TodosTable-${self:provider.stage}
     TODO_ID_INDEX: TodoIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-images-4tf129ytre0764-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
@@ -67,7 +67,7 @@ functions:
     events:
       - http:
           method: get
-          path: todos/{userId}
+          path: todos
           authorizer: Auth
           cors: true 
     iamRoleStatements:
@@ -278,23 +278,23 @@ resources:
         RestApiId: 
           Ref: ApiGatewayRestApi
         ValidateRequestBody: true
-        ValidateRequestParameters: true
+        ValidateRequestParameters: false
 
     TodosDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-          - AttributeName: todoId 
-            AttributeType: S
           - AttributeName: userId
             AttributeType: S 
+          - AttributeName: todoId
+            AttributeType: S  
           - AttributeName: createdAt
             AttributeType: S                       
         KeySchema: 
-          - AttributeName: todoId
+          - AttributeName: userId
             KeyType: HASH
           - AttributeName: createdAt
-            KeyType: HASH  
+            KeyType: RANGE
         TableName: ${self:provider.environment.TODOS_TABLE}                    
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.TODO_ID_INDEX}
