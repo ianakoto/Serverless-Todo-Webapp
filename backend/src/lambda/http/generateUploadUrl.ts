@@ -37,9 +37,9 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
     attachmentId: attachmentId
   });
 
-  const url = getUploadUrl(todoId)
-
-  await updateTodoAttachmentUrl(todoId, attachmentId);
+  const geturl = getUploadUrl(attachmentId)
+  logger.info(`signed url:,${geturl}`);
+  await updateTodoAttachmentUrl(todoId, geturl);
 
   logger.info("Attempting to put item:");
 
@@ -51,7 +51,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       'Access-Control-Allow-Origin': '*'
     },
     body: JSON.stringify({
-      uploadUrl: url
+      uploadUrl: geturl
     })
   }
 
@@ -83,7 +83,7 @@ async function updateTodoAttachmentUrl(todoId: string, attachmentUrl: string){
       },
       UpdateExpression: "set attachmentUrl = :attachmentUrl",
       ExpressionAttributeValues: {
-          ":attachmentUrl": `https://${bucketName}.s3.amazonaws.com/${attachmentUrl}`
+          ":attachmentUrl": attachmentUrl
       }
   }).promise();
 }

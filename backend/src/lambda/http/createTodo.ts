@@ -41,7 +41,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
 
 
   logger.info(`Todo new Item: ${newTodoWithAdditionalInfo}`) 
-  const todonewItems = await creatTodo(newTodoWithAdditionalInfo)
+  const item = await creatTodo(newTodoWithAdditionalInfo)
   
 
   return {
@@ -50,7 +50,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
       'Access-Control-Allow-Origin': '*'
     },
     body: JSON.stringify({
-      items: todonewItems
+      items: item
     })
   }
 

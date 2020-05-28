@@ -28,30 +28,6 @@ custom:
               type: string
             dueDate:
               type: string  
-      - name: DeleteGetTodoRequest
-        contentType: "application/json"
-        schema:
-          required: 
-            - todoId
-          type: object  
-          properties:
-            todoId:
-              type: string
-      - name: UpdateTodoResponse
-        contentType: "application/json"
-        schema:
-          required:
-            - name
-            - dueDate
-            - done
-          type: object
-          properties:
-            name:
-              type: string
-            dueDate:
-              type: string
-            done:
-              type: boolean
       - name: Response
         contentType: "application/json"
         schema:
@@ -89,7 +65,7 @@ provider:
   region: ${opt:region, 'us-east-1'}
 
   environment:
-    TODOS_TABLE: TodosTable-${self:provider.stage}
+    TODOS_TABLE: DynamoTodosTable-${self:provider.stage}
     TODO_ID_INDEX: TodoIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-images-4tf129ytre0764-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
@@ -115,29 +91,24 @@ functions:
           authorizer: Auth
           cors: true 
     iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:GetItem
-        - dynamodb:Scan
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-      Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODO_ID_INDEX}
-    - Effect: Allow
-      Action:
-        - xray:GetSamplingRules
-        - xray:GetSamplingTargets
-        - xray:GetSamplingStatisticSummaries
-        - xray:BatchGetTraces
-        - xray:GetServiceGraph
-        - xray:GetTraceGraph
-        - xray:GetTraceSummaries
-        - xray:GetGroups
-        - xray:GetGroup
-        - xray:PutTraceSegments
-      Resource:
-        - "*"
+      - Effect: Allow
+        Action:
+          - dynamodb:Query
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODO_ID_INDEX}
+      - Effect: Allow
+        Action:
+          - xray:GetSamplingRules
+          - xray:GetSamplingTargets
+          - xray:GetSamplingStatisticSummaries
+          - xray:BatchGetTraces
+          - xray:GetServiceGraph
+          - xray:GetTraceGraph
+          - xray:GetTraceSummaries
+          - xray:GetGroups
+          - xray:GetGroup
+          - xray:PutTraceSegments
+        Resource:
+          - "*"
 
   # # TODO: Configure this function
   CreateTodo:
@@ -331,18 +302,18 @@ resources:
         RestApiId: 
           Ref: ApiGatewayRestApi
         ValidateRequestBody: true
-        ValidateRequestParameters: false
+        ValidateRequestParameters: true
 
     TodosDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-          - AttributeName: todoId
+          - AttributeName: userId 
             AttributeType: S
-          - AttributeName: userId
+          - AttributeName: todoId
             AttributeType: S                     
         KeySchema: 
-          - AttributeName: todoId
+          - AttributeName: userId
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}                    

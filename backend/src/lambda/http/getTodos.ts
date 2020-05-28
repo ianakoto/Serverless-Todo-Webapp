@@ -1,5 +1,5 @@
 import 'source-map-support/register'
-import { APIGatewayProxyResult, APIGatewayProxyHandler } from 'aws-lambda'
+import { APIGatewayProxyResult, APIGatewayProxyHandler, APIGatewayEvent } from 'aws-lambda'
 import * as AWS from 'aws-sdk'
 import * as AWSXRay from 'aws-xray-sdk'
 
@@ -12,18 +12,18 @@ const doClient= new XAWS.DynamoDB.DocumentClient()
 
 
 const todosTable = process.env.TODOS_TABLE
+const todoTableIndex = process.env.TODO_ID_INDEX
 
 
 
-
-export const handler: APIGatewayProxyHandler = async (): Promise<APIGatewayProxyResult> => {
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
   // TODO: Get all TODO items for a current user
   
+  const userId = event.pathParameters.userId
 
 
 
-
-  const todoItems = await getItemsPerTodo()
+  const todoItems = await getItemsPerTodo(userId)
   
 
   if(todoItems.Count != 0) {
@@ -55,9 +55,14 @@ export const handler: APIGatewayProxyHandler = async (): Promise<APIGatewayProxy
 }
 
 
-async function getItemsPerTodo() {
-  const result = await doClient.scan({
-    TableName: todosTable
+async function getItemsPerTodo(userId: String) {
+  const result = await doClient.query({
+    TableName: todosTable,
+    IndexName: todoTableIndex,
+    KeyCOnditionExpression: ' userId = :userId',
+    ExpressionAttributeValues: {
+      ':userId': userId
+    }
   }).promise()
 
   logger.info(`todo results: ${result.items}`)
