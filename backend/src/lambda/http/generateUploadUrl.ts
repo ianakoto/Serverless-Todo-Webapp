@@ -31,7 +31,11 @@ const s3 = new XAWS.S3({
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
   const todoId = event.pathParameters.todoId
   const attachmentId = uuid.v4();
- 
+
+
+
+
+
   logger.info("Generating upload URL:", {
     todoId: todoId,
     attachmentId: attachmentId
@@ -41,9 +45,23 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayProxyEven
   logger.info(`signed url:,${geturl}`);
   await updateTodoAttachmentUrl(todoId, geturl);
 
-  logger.info("Attempting to put item:");
 
 
+  const attachmentUrl = `https://${bucketName}.s3.amazonaws.com/${attachmentId}`
+
+
+  logger.info(`Updating todoId ${todoId} with attachmentID ${attachmentUrl}`)
+
+  await docClient.update({
+      TableName: todosTable,
+      Key: {
+          "todoId": todoId
+      },
+      UpdateExpression: "set attachmentUrl = :attachmentUrl",
+      ExpressionAttributeValues: {
+          ":attachmentUrl": attachmentUrl
+      }
+  })
 
   return {
     statusCode: 200,
