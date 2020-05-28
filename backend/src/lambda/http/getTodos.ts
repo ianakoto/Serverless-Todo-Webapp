@@ -20,12 +20,13 @@ const todoTableIndex = process.env.TODO_ID_INDEX
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent): Promise<APIGatewayProxyResult> => {
   // TODO: Get all TODO items for a current user
-  logger.info(`todo get body: ${JSON.parse(event.body)}`)
+
 
   const authHeader = event.headers.Authorization
   const authSplit = authHeader.split(" ")
   const userId = parseUserId(authSplit[1])
-
+  
+  logger.info(`todo get body for user ID: ${userId}`)
 
 
   const todoItems = await getItemsPerTodo(userId)
@@ -39,7 +40,7 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent): P
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({
-        item: todoItems.Items
+        items: todoItems.Items
       })
     }
 
@@ -64,7 +65,7 @@ async function getItemsPerTodo(userId: String) {
   const result = await doClient.query({
     TableName: todosTable,
     IndexName: todoTableIndex,
-    KeyCOnditionExpression: ' userId = :userId',
+    KeyConditionExpression: ' userId = :userId',
     ExpressionAttributeValues: {
       ':userId': userId
     }
