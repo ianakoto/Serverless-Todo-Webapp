@@ -308,21 +308,25 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-          - AttributeName: userId 
+          - AttributeName: todoId 
             AttributeType: S
-          - AttributeName: todoId
-            AttributeType: S                     
-        KeySchema: 
           - AttributeName: userId
+            AttributeType: S 
+          - AttributeName: createdAt
+            AttributeType: S                       
+        KeySchema: 
+          - AttributeName: todoId
             KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.TODOS_TABLE}                    
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.TODO_ID_INDEX}
             KeySchema:
               - AttributeName: userId
                 KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE  
             Projection:
-              ProjectionType: ALL    
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST                  
     
 
