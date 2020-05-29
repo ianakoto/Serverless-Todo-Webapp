@@ -22,7 +22,7 @@ provider:
   region: ${opt:region, 'us-east-1'}
 
   environment:
-    TODOS_TABLE: TodosTable-${self:provider.stage}
+    TODOS_TABLE: TodosTable-Prime-${self:provider.stage}
     TODO_ID_INDEX: TodoIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-images-4tf129ytre0764-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
@@ -284,8 +284,10 @@ resources:
           - AttributeName: userId
             AttributeType: S                      
         KeySchema: 
-          - AttributeName: todoId
+          - AttributeName: userId
             KeyType: HASH
+          - AttributeName: todoId
+            KeyType: RANGE  
         TableName: ${self:provider.environment.TODOS_TABLE}                    
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.TODO_ID_INDEX}
