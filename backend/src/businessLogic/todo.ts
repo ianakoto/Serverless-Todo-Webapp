@@ -40,18 +40,18 @@ export async function createUserTodo(event:APIGatewayProxyEvent): Promise<TodoIt
 export async function deleteUserTodo(event: APIGatewayProxyEvent) {
    
     const todoId = event.pathParameters.todoId
-
-    return todoAccess.deleteUserTodo(todoId)
+    const userId = getUserId(event);
+    return todoAccess.deleteUserTodo(userId,todoId)
 }
 
 
 export async function updateUserTodo(event: APIGatewayProxyEvent) {
     const todoId = event.pathParameters.todoId
     const updatedTodo: UpdateTodoRequest = JSON.parse(event.body)
-      
+    const userId = getUserId(event);
 
 
-    return todoAccess.updateUserTodo(todoId,updatedTodo)
+    return todoAccess.updateUserTodo(userId,todoId,updatedTodo)
 }
 
 export async function generateUserUploadUrl(event: APIGatewayProxyEvent) {

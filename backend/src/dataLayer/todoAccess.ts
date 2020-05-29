@@ -49,11 +49,12 @@ export class TodoAccess {
     }
 
 
-    async updateUserTodo(todoId: string, newItem: TodoUpdate) {
+    async updateUserTodo(userId:string, todoId: string, newItem: TodoUpdate) {
 
         var params = {
             TableName: this.todosTable,
             Key:{
+              "userId": userId,
               "todoId": todoId
             },
             UpdateExpression: "set #todoName =:name, dueDate=:dueDate, done=:done",
@@ -76,10 +77,11 @@ export class TodoAccess {
     }
 
 
-    async deleteUserTodo(todoId: string) {
+    async deleteUserTodo(userId:string, todoId: string) {
         var params = {
             TableName: this.todosTable,
             Key:{
+              "userId": userId,
               "todoId": todoId
             }
         };
@@ -108,6 +110,7 @@ export class TodoAccess {
     const params ={
       TableName: this.todosTable,
       Key: {
+          "userId": userId,
           "todoId": todoId
       },
       UpdateExpression: "set attachmentUrl = :attachmentUrl",
