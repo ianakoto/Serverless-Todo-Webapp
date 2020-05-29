@@ -26,57 +26,21 @@ provider:
     TODO_ID_INDEX: TodoIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-images-4tf129ytre0764-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
+
+
+
+
 custom:
   documentation:
     api:
       info:
         version: 'v1.0.0'
         title: Udagram API
-        description: Serverless application for managing todos
-      tags:
-        -
-          name: UseCreateTodo
-          description: User Input Validation       
+        description: Serverless application for managing todos      
     models:
-      - name: MessageResponse
-        contentType: "application/json"
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
       - name: CreateTodoRequest
         contentType: "application/json"   
-        schema:
-          required: 
-            - name
-            - dueDate  
-          properties:
-            name:
-              type: string
-            dueDate:
-              type: string  
-      - name: CreateTodoUserResponse
-        contentType: "application/json"
-        schema:
-          type: object
-          properties:
-            result:
-              type: string
-      - name: 400JsonResponse
-        contentType: "application/json"
-        schema:
-          type: object
-          properties:
-            message:
-              type: string
-            statusCode:
-              type: number
-  commonModelSchemaFragments:
-    MethodResponse400Json:
-      statusCode: '400'
-      responseModels:
-        "application/json": 400JsonResponse
+        schema: ${file(models/create-todo-request.json)}
     
 
 
@@ -125,29 +89,21 @@ functions:
         Resource:
           - "*"
 
-  # # TODO: Configure this function
+
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
     events:
       - http:
-          documentation:
-            summary: "Create todos"
-            description: "create todos"
-            tags: 
-              - UseCreateTodo
-            requestModels:
-              "application/json": CreateTodoRequest
           method: post
           path: todos
           authorizer: Auth
           cors: true
           reqValidatorName: 'xMyRequestValidator'
-          methodResponses:
-              - statusCode: '200'
-                responseModels:
-                  "application/json": CreateTodoUserResponse
-              - ${self:custom.commonModelSchemaFragments.MethodResponse400Json}
-
+          documentation:
+            summary: Create a new  todo
+            description: create todos
+            requestModels:
+              'application/json': CreateTodoRequest
 
     iamRoleStatements:
       - Effect: Allow

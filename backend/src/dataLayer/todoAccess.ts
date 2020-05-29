@@ -101,7 +101,7 @@ export class TodoAccess {
 
     logger.info(`signed url:,${url}`);
 
-    const imageUrl = `https://${this.bucketName}.s3.amazonaws.com/${attachmentId}.png`
+    const imageUrl = `https://${this.bucketName}.s3.amazonaws.com/${attachmentId}`
 
     logger.info(`Attempting to Updating attachmentUrl with attachmentID ${imageUrl}`)
 
@@ -110,7 +110,7 @@ export class TodoAccess {
         Key: {
             "todoId": todoId
         },
-        UpdateExpression: "set attachmentUrl = :imageUrl",
+        UpdateExpression: "set attachmentUrl = :attachmentUrl",
         ExpressionAttributeValues: {
             ":attachmentUrl": imageUrl
         },
