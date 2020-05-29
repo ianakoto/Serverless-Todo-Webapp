@@ -8,26 +8,6 @@ plugins:
   - serverless-aws-documentation
 
 
-custom:
-  documentation:
-    api:
-      info:
-        version: 'v1.0.0'
-        title: Udagram API
-        description: Serverless application for managing todos
-    models:
-      - name: CreateTodoRequest
-        contentType: "application/json"   
-        schema:
-          required: 
-            - name
-            - dueDate
-          type: object  
-          properties:
-            name:
-              type: string
-            dueDate:
-              type: string  
 
 
 
@@ -36,11 +16,8 @@ provider:
   tracing:
     lambda: true
     apiGateway: true
-
-
   name: aws
   runtime: nodejs12.x
-
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
 
@@ -49,7 +26,57 @@ provider:
     TODO_ID_INDEX: TodoIdIndex
     IMAGES_S3_BUCKET: serverless-udagram-images-4tf129ytre0764-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
-
+custom:
+  documentation:
+    api:
+      info:
+        version: 'v1.0.0'
+        title: Udagram API
+        description: Serverless application for managing todos
+      tags:
+        -
+          name: UseCreateTodo
+          description: User Input Validation       
+    models:
+      - name: MessageResponse
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+      - name: CreateTodoRequest
+        contentType: "application/json"   
+        schema:
+          required: 
+            - name
+            - dueDate  
+          properties:
+            name:
+              type: string
+            dueDate:
+              type: string  
+      - name: CreateTodoUserResponse
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            result:
+              type: string
+      - name: 400JsonResponse
+        contentType: "application/json"
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+            statusCode:
+              type: number
+  commonModelSchemaFragments:
+    MethodResponse400Json:
+      statusCode: '400'
+      responseModels:
+        "application/json": 400JsonResponse
     
 
 
@@ -103,16 +130,23 @@ functions:
     handler: src/lambda/http/createTodo.handler
     events:
       - http:
+          documentation:
+            summary: "Create todos"
+            description: "create todos"
+            tags: 
+              - UseCreateTodo
+            requestModels:
+              "application/json": CreateTodoRequest
           method: post
           path: todos
           authorizer: Auth
           cors: true
-          reqValidatorName: GateWayValidator
-          documentation:
-            summary: "Create todos"
-            description: "create todos"
-            requestModels:
-              "application/json": CreateTodoRequest
+          reqValidatorName: 'xMyRequestValidator'
+          methodResponses:
+              - statusCode: '200'
+                responseModels:
+                  "application/json": CreateTodoUserResponse
+              - ${self:custom.commonModelSchemaFragments.MethodResponse400Json}
 
 
     iamRoleStatements:
@@ -275,7 +309,7 @@ resources:
           Ref: 'ApiGatewayRestApi'  
 
 
-    GateWayValidator:  
+    xMyRequestValidator:  
       Type: "AWS::ApiGateway::RequestValidator"
       Properties:
         Name: 'request-body-validator'
@@ -288,17 +322,13 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-          - AttributeName: userId
-            AttributeType: S 
           - AttributeName: todoId
-            AttributeType: S  
-          - AttributeName: createdAt
-            AttributeType: S                       
-        KeySchema: 
+            AttributeType: S 
           - AttributeName: userId
+            AttributeType: S                      
+        KeySchema: 
+          - AttributeName: todoId
             KeyType: HASH
-          - AttributeName: createdAt
-            KeyType: RANGE
         TableName: ${self:provider.environment.TODOS_TABLE}                    
         GlobalSecondaryIndexes:
           - IndexName: ${self:provider.environment.TODO_ID_INDEX}
