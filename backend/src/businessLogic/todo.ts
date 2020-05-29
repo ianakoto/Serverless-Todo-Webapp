@@ -58,9 +58,9 @@ export async function generateUserUploadUrl(event: APIGatewayProxyEvent) {
    
     const todoId = event.pathParameters.todoId
     const attachmentId = uuid.v4();
-  
+    const userId = getUserId(event);
   
    
    
-    return todoAccess.generateUserUploadUrl(todoId,attachmentId)
+    return todoAccess.generateUserUploadUrl(userId,todoId,attachmentId)
 }

@@ -91,7 +91,7 @@ export class TodoAccess {
           return deleteItem
     }
 
-    async generateUserUploadUrl(todoId: string, attachmentId: string) {
+    async generateUserUploadUrl(userId:string, todoId: string, attachmentId: string) {
 
     const url= this.s3.getSignedUrl('putObject',{
             Bucket: this.bucketName,
@@ -103,19 +103,26 @@ export class TodoAccess {
 
     const imageUrl = `https://${this.bucketName}.s3.amazonaws.com/${attachmentId}`
 
-    logger.info(`Attempting to Updating attachmentUrl with attachmentID ${imageUrl}`)
+    logger.info(`Attempting to Updating attachmentUrl: ${imageUrl} with attachmentID:${attachmentId} on todoId:${todoId} and userId::${userId} `)
 
-    await this.docClient.update({
-        TableName: this.todosTable,
-        Key: {
-            "todoId": todoId
-        },
-        UpdateExpression: "set attachmentUrl = :attachmentUrl",
-        ExpressionAttributeValues: {
-            ":attachmentUrl": imageUrl
-        },
-        ReturnValues:"UPDATED_NEW"
-    })
+    const params ={
+      TableName: this.todosTable,
+      Key: {
+          "todoId": todoId
+      },
+      UpdateExpression: "set attachmentUrl = :attachmentUrl",
+      ExpressionAttributeValues: {
+          ":attachmentUrl": imageUrl
+      },
+      ReturnValues:"UPDATED_NEW"
+  }
+   await this.docClient.update(params, function(err, data) {
+      if (err) {
+        logger.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
+      } else {
+        logger.log("UpdateItem succeeded:", JSON.stringify(data, null, 2));
+      }
+    }).promise()
 
     return url
 
