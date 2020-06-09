@@ -161,13 +161,6 @@ logger.info('User was authorized', {
 ```
 
 
-# Grading the submission
-
-Once you have finished developing your application, please set `apiId` and Auth0 parameters in the `config.ts` file in the `client` folder. A reviewer would start the React development server to run the frontend that should be configured to interact with your serverless application.
-
-**IMPORTANT**
-
-*Please leave your application running until a submission is reviewed. If implemented correctly it will cost almost nothing when your application is idle.*
 
 # Suggestions
 
@@ -245,27 +238,4 @@ This should start a development server with the React application that will inte
 
 # Postman collection
 
-An alternative way to test your API, you can use the Postman collection that contains sample requests. You can find a Postman collection in this project. To import this collection, do the following.
-
-Click on the import button:
-
-![Alt text](images/import-collection-1.png?raw=true "Image 1")
-
-
-Click on the "Choose Files":
-
-![Alt text](images/import-collection-2.png?raw=true "Image 2")
-
-
-Select a file to import:
-
-![Alt text](images/import-collection-3.png?raw=true "Image 3")
-
-
-Right click on the imported collection to set variables for the collection:
-
-![Alt text](images/import-collection-4.png?raw=true "Image 4")
-
-Provide variables for the collection (similarly to how this was done in the course):
-
-![Alt text](images/import-collection-5.png?raw=true "Image 5")
+An alternative way to test your API, you can use the Postman collection that contains sample requests. You can find a Postman collection in this project.
